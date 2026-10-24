@@ -13,7 +13,9 @@ from streamlit_folium import st_folium
 st.set_page_config(page_title="Dashboard Outlet", page_icon="📍", layout="wide")
 
 AREA_ORDER = ["SBY BRT", "SBY TIMUR", "SDA BRT", "SDA TIMUR"]
-ROUTE_COLORS = ["#1E6FE0", "#E8590C", "#2F9E44", "#AE3EC9", "#C2255C", "#0C8599", "#F08C00", "#5C7CFA"]
+ROUTE_COLORS = ["#455A64", "#8E24AA", "#F08C00", "#0C8599", "#6D4C41", "#C2185B"]
+JENIS_COLORS = {"AWARENESS": "#1E6FE0", "NON OCS": "#D32F2F", "OCS": "#2E7D32"}
+JENIS_DEFAULT = "#757575"
 YN_COLS = ["WKSK", "ALVA", "PROGRAM KOMPETITOR"]
 SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets.readonly",
@@ -27,6 +29,9 @@ st.markdown(
     div[data-testid="stMetric"] {background: rgba(46,125,50,.07); border: 1px solid rgba(46,125,50,.25);
         border-radius: 10px; padding: 10px 14px;}
     div[data-testid="stMetricLabel"] p {font-size: .82rem;}
+    span[data-baseweb="tag"]:has(span[title="AWARENESS"]) {background-color: #1E6FE0 !important;}
+    span[data-baseweb="tag"]:has(span[title="NON OCS"]) {background-color: #D32F2F !important;}
+    span[data-baseweb="tag"]:has(span[title="OCS"]) {background-color: #2E7D32 !important;}
     </style>
     """,
     unsafe_allow_html=True,
@@ -223,7 +228,7 @@ def build_map(d: pd.DataFrame, show_route: bool, follow_road: bool) -> folium.Ma
             )
             folium.Marker(
                 [r["LAT"], r["LON"]],
-                icon=marker_icon(int(r["NO"]), color),
+                icon=marker_icon(int(r["NO"]), JENIS_COLORS.get(r["JENIS OUTLET"], JENIS_DEFAULT)),
                 tooltip=f"#{int(r['NO'])} {r['NAMA OUTLET']}",
                 popup=folium.Popup(popup, max_width=280),
             ).add_to(m)
@@ -307,6 +312,14 @@ with tab_map:
         hari = f["TANGGAL"].nunique()
         if hari > 1:
             st.caption(f"{hari} hari dipilih — tiap hari punya warna rute sendiri dan nomor urut mulai dari 1.")
+        st.markdown(
+            " &nbsp; ".join(
+                f"<span style='display:inline-block;width:12px;height:12px;border-radius:50%;"
+                f"background:{c};margin-right:4px;vertical-align:middle'></span>{j}"
+                for j, c in JENIS_COLORS.items()
+            ),
+            unsafe_allow_html=True,
+        )
         with st.spinner("Menyusun peta…"):
             st_folium(build_map(f, show_route, follow_road), height=620, use_container_width=True,
                       returned_objects=[])
@@ -326,7 +339,7 @@ with tab_sum:
         per_area = f.groupby(["AREA", "JENIS OUTLET"]).size().reset_index(name="Outlet")
         fig = px.bar(per_area, x="AREA", y="Outlet", color="JENIS OUTLET", text_auto=True,
                      category_orders={"AREA": areas}, title="Outlet per Area",
-                     color_discrete_sequence=["#2E7D32", "#81C784", "#FFB74D", "#90A4AE"])
+                     color_discrete_map=JENIS_COLORS)
         fig.update_layout(legend_title=None, xaxis_title=None, margin=dict(t=50, b=10))
         c1.plotly_chart(fig)
 
