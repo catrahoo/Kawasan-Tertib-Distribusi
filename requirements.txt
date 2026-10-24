@@ -1,0 +1,10 @@
+streamlit==1.50.0
+pandas>=2.2
+plotly>=5.22
+folium>=0.17
+streamlit-folium>=0.22
+gspread>=6.1
+google-auth>=2.29
+google-api-python-client>=2.130
+requests>=2.31
+Pillow>=10.3
