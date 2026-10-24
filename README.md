@@ -23,8 +23,8 @@ Repo baru (boleh Private) → upload semua file ini: `app.py`, `requirements.txt
 ## 4. Deploy di Streamlit
 1. https://share.streamlit.io → **Create app** → pilih repo, branch `main`, file `app.py`.
 2. **Advanced settings → Secrets** → isi sesuai `.streamlit/secrets.toml.example`:
-   - `sheet_id` = ID dari link sheet (`https://docs.google.com/spreadsheets/d/`**ID_INI**`/edit`)
-   - `[gcp_service_account]` = isi dari file .json (tiap baris `kunci = "nilai"`)
+   - `sheet_id` = link Google Sheet (boleh link lengkap)
+   - `gcp_json` = tempel UTUH isi file .json di antara tanda '''
    - `app_password` = password untuk buka dashboard (opsional)
 3. Deploy.
 

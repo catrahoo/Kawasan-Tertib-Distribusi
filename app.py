@@ -55,14 +55,30 @@ if not password_ok():
 
 # ---------------------------------------------------------------- data
 def has_service_account() -> bool:
-    return "gcp_service_account" in st.secrets and "sheet_id" in st.secrets
+    return ("gcp_json" in st.secrets or "gcp_service_account" in st.secrets) and "sheet_id" in st.secrets
+
+
+def sa_info() -> dict:
+    """Kunci service account: isi file .json ditempel utuh di gcp_json (atau format [gcp_service_account])."""
+    import json
+
+    if "gcp_json" in st.secrets:
+        return json.loads(st.secrets["gcp_json"], strict=False)
+    return dict(st.secrets["gcp_service_account"])
+
+
+def sheet_key() -> str:
+    """Terima ID sheet atau link lengkap Google Sheet."""
+    raw = str(st.secrets["sheet_id"]).strip()
+    m = re.search(r"/d/([a-zA-Z0-9_-]+)", raw)
+    return m.group(1) if m else raw
 
 
 @st.cache_resource
 def get_creds():
     from google.oauth2.service_account import Credentials
 
-    return Credentials.from_service_account_info(dict(st.secrets["gcp_service_account"]), scopes=SCOPES)
+    return Credentials.from_service_account_info(sa_info(), scopes=SCOPES)
 
 
 @st.cache_resource
@@ -100,7 +116,7 @@ def load_data() -> pd.DataFrame:
         import gspread
 
         gc = gspread.authorize(get_creds())
-        ws = gc.open_by_key(st.secrets["sheet_id"]).worksheet(st.secrets.get("sheet_name", "DATA OUTLET"))
+        ws = gc.open_by_key(sheet_key()).worksheet(st.secrets.get("sheet_name", "DATA OUTLET"))
         rows = ws.get_all_values()
         df = pd.DataFrame(rows[1:], columns=rows[0])
     else:
