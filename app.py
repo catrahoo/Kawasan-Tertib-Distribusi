@@ -32,7 +32,11 @@ st.markdown(
     span[data-baseweb="tag"]:has(span[title="AWARENESS"]) {background-color: #1E6FE0 !important;}
     span[data-baseweb="tag"]:has(span[title="NON OCS"]) {background-color: #D32F2F !important;}
     span[data-baseweb="tag"]:has(span[title="OCS"]) {background-color: #2E7D32 !important;}
+    .wm-credit {position: fixed; left: 12px; bottom: 8px; z-index: 999999; pointer-events: none;
+        font: 600 11px/1.2 Arial, sans-serif; color: rgba(120,120,120,.75); letter-spacing: .3px;
+        background: rgba(255,255,255,.55); padding: 3px 8px; border-radius: 6px;}
     </style>
+    <div class="wm-credit">Develop Program By Nurman Catra</div>
     """,
     unsafe_allow_html=True,
 )
