@@ -130,28 +130,38 @@ def load_data() -> pd.DataFrame:
 
 
 @st.cache_data(ttl=86400, show_spinner=False)
+def _fetch_photo(name: str) -> bytes:
+    """Download foto dari Drive. Gagal = exception (tidak di-cache, jadi dicoba lagi nanti)."""
+    drive = get_drive()
+    q = "name = '%s' and trashed = false" % name.replace("\\", "\\\\").replace("'", "\\'")
+    res = drive.files().list(
+        q=q, fields="files(id)", pageSize=1, supportsAllDrives=True, includeItemsFromAllDrives=True
+    ).execute()
+    files = res.get("files", [])
+    if not files:
+        raise LookupError("tidak ditemukan / folder foto belum di-share ke service account")
+    raw = drive.files().get_media(fileId=files[0]["id"], supportsAllDrives=True).execute()
+    img = ImageOps.exif_transpose(Image.open(io.BytesIO(raw))).convert("RGB")
+    img.thumbnail((900, 900))
+    buf = io.BytesIO()
+    img.save(buf, "JPEG", quality=82)
+    return buf.getvalue()
+
+
 def get_photo(path: str):
-    """Ambil foto dari folder AppSheet di Google Drive (perlu service account)."""
+    """Return (bytes, None) kalau berhasil, (None, alasan) kalau gagal."""
     name = str(path).split("/")[-1].strip()
-    if not name or not has_service_account():
-        return None
+    if not name:
+        return None, "kosong di sheet"
     try:
-        drive = get_drive()
-        q = "name = '%s' and trashed = false" % name.replace("\\", "\\\\").replace("'", "\\'")
-        res = drive.files().list(
-            q=q, fields="files(id)", pageSize=1, supportsAllDrives=True, includeItemsFromAllDrives=True
-        ).execute()
-        files = res.get("files", [])
-        if not files:
-            return None
-        raw = drive.files().get_media(fileId=files[0]["id"], supportsAllDrives=True).execute()
-        img = ImageOps.exif_transpose(Image.open(io.BytesIO(raw))).convert("RGB")
-        img.thumbnail((900, 900))
-        buf = io.BytesIO()
-        img.save(buf, "JPEG", quality=82)
-        return buf.getvalue()
-    except Exception:
-        return None
+        return _fetch_photo(name), None
+    except LookupError as e:
+        return None, str(e)
+    except Exception as e:
+        msg = str(e)
+        if "has not been used" in msg or "is disabled" in msg:
+            return None, "Google Drive API belum diaktifkan di Google Cloud"
+        return None, f"error: {msg[:160]}"
 
 
 @st.cache_data(ttl=86400, show_spinner=False)
@@ -396,6 +406,13 @@ with tab_foto:
     elif not has_service_account():
         st.info("Foto hanya bisa tampil kalau dashboard tersambung pakai service account (lihat README).")
     else:
+        try:
+            sa_email = sa_info().get("client_email", "")
+        except Exception:
+            sa_email = ""
+        if sa_email:
+            st.caption(f"Foto diambil dari Google Drive pakai akun: `{sa_email}` — folder foto AppSheet "
+                       "harus di-share ke email ini.")
         per_page = 6
         pages = max(1, -(-len(f) // per_page))
         cpg, cinfo = st.columns([1, 3])
@@ -410,11 +427,11 @@ with tab_foto:
                            f"WKSK {r['WKSK']} · ALVA {r['ALVA']}")
                 a, b = st.columns(2)
                 for colx, key, label in [(a, "FOTO DISPLAY ROKOK", "Display"), (b, "FOTO SUNBLIND", "Sunblind")]:
-                    img = get_photo(r[key])
+                    img, err = get_photo(r[key])
                     if img:
                         colx.image(img, caption=label)
                     else:
-                        colx.caption(f"{label}: foto tidak ada")
+                        colx.caption(f"{label}: {err}")
 
 # ---------------------------------------------------------------- table
 with tab_data:
