@@ -271,8 +271,7 @@ with st.sidebar:
     st.header("Filter")
     tgl_valid = df["TANGGAL"].dropna()
     tmin, tmax = tgl_valid.min(), tgl_valid.max()
-    rng = st.date_input("Tanggal", value=(tmax, tmax), min_value=tmin, max_value=tmax, format="DD/MM/YYYY")
-    d_from, d_to = (rng[0], rng[-1]) if isinstance(rng, (list, tuple)) and rng else (tmax, tmax)
+    d_from, d_to = tmin, tmax  # tanpa filter tanggal: tampilkan semua data
 
     areas = [a for a in AREA_ORDER if a in df["AREA"].unique()] + sorted(
         a for a in df["AREA"].unique() if a and a not in AREA_ORDER
