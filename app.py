@@ -10,6 +10,9 @@ import streamlit as st
 from PIL import Image, ImageOps
 from streamlit_folium import st_folium
 
+import monitor
+monitor.pasang("Dashboard Outlet")  # notif WA kalau app error
+
 st.set_page_config(page_title="Dashboard Outlet", page_icon="📍", layout="wide")
 
 AREA_ORDER = ["SBY BRT", "SBY TIMUR", "SDA BRT", "SDA TIMUR"]
