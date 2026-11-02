@@ -12,6 +12,7 @@ import folium
 import pandas as pd
 import plotly.express as px
 import streamlit as st
+import ui
 from PIL import Image, ImageOps
 from streamlit_folium import st_folium
 
@@ -215,12 +216,13 @@ def render():
 
     judul()
     st.caption(f"{len(f)} outlet · {int(f['JML FOTO'].sum())} foto · area {', '.join(f_area) or '–'}")
-    k = st.columns(5)
-    k[0].metric("Total Outlet", f"{len(f):,}")
-    k[1].metric("SNT", f"{f['JENIS OUTLET'].eq('SNT').sum():,}")
-    k[2].metric("PNT", f"{f['JENIS OUTLET'].eq('PNT').sum():,}")
-    k[3].metric("SWK", f"{f['JENIS OUTLET'].eq('SWK').sum():,}")
-    k[4].metric("Ada Foto", "–" if f.empty else f"{(f['JML FOTO'] > 0).mean() * 100:.0f}%")
+    ui.kpi([
+        ("Total Outlet", f"{len(f):,}", "toko", "hijau"),
+        ("SNT", f"{f['JENIS OUTLET'].eq('SNT').sum():,}", "bendera", "hijau"),
+        ("PNT", f"{f['JENIS OUTLET'].eq('PNT').sum():,}", "bendera", "merah"),
+        ("SWK", f"{f['JENIS OUTLET'].eq('SWK').sum():,}", "bendera", "biru"),
+        ("Ada Foto", "–" if f.empty else f"{(f['JML FOTO'] > 0).mean() * 100:.0f}%", "foto", "kuning"),
+    ])
 
     tab_map, tab_sum, tab_foto, tab_data = st.tabs(["🗺️ Peta", "📊 Ringkasan", "🖼️ Foto", "📋 Data"])
 

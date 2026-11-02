@@ -42,3 +42,5 @@ def test_menu_coi_bisa_dibuka_tanpa_secrets():
     at.run()
     assert not at.exception, [e.message for e in at.exception]
     assert any("COI TANAH AIR" in m.value for m in at.markdown)
+    assert not any('class="spl"' in m.value for m in at.markdown), "layar loading harus hilang setelah data siap"
+    assert any("kpi-card" in m.value for m in at.markdown)

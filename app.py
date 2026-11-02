@@ -11,6 +11,7 @@ from PIL import Image, ImageOps
 from streamlit_folium import st_folium
 
 import monitor
+import ui
 monitor.pasang("Dashboard Outlet")  # notif WA kalau app error
 
 st.set_page_config(page_title="Dashboard Outlet", page_icon="📍", layout="wide")
@@ -29,15 +30,12 @@ st.markdown(
     """
     <style>
     .block-container {padding-top: 4rem; padding-bottom: 2rem;}
-    div[data-testid="stMetric"] {background: rgba(46,125,50,.07); border: 1px solid rgba(46,125,50,.25);
-        border-radius: 10px; padding: 10px 14px;}
-    div[data-testid="stMetricLabel"] p {font-size: .82rem;}
     span[data-baseweb="tag"]:has(span[title="AWARENESS"]) {background-color: #1E6FE0 !important;}
     span[data-baseweb="tag"]:has(span[title="NON OCS"]) {background-color: #D32F2F !important;}
     span[data-baseweb="tag"]:has(span[title="OCS"]) {background-color: #2E7D32 !important;}
     .wm-credit {position: fixed; left: 12px; bottom: 8px; z-index: 999999; pointer-events: none;
-        font: 600 11px/1.2 Arial, sans-serif; color: rgba(120,120,120,.75); letter-spacing: .3px;
-        background: rgba(255,255,255,.55); padding: 3px 8px; border-radius: 6px;}
+        font: 600 11px/1.2 Arial, sans-serif; color: rgba(255,255,255,.45); letter-spacing: .3px;
+        background: rgba(15,26,20,.7); padding: 3px 8px; border-radius: 6px;}
     </style>
     <div class="wm-credit">Develop Program By Nurman Catra</div>
     """,
@@ -74,7 +72,9 @@ st.session_state["menu_terakhir"] = pilih
 if pilih == MENU[1]:
     import coi
 
+    ph = ui.splash_mulai("COI TANAH AIR", "Membaca data outlet dan foto…")
     coi.render()
+    ui.splash_selesai(ph)
     st.stop()
 
 
@@ -272,11 +272,14 @@ if not has_service_account() and "sheet_csv_url" not in st.secrets:
     st.error("Secrets belum diisi. Lihat README bagian **Isi Secrets di Streamlit**.")
     st.stop()
 
+ph = ui.splash_mulai("Dashboard Kunjungan Outlet", "Mengambil data dari Google Sheet…")
 try:
     df = load_data()
 except Exception as e:
+    ui.splash_selesai(ph)
     st.error(f"Gagal ambil data dari Google Sheet: {e}")
     st.stop()
+ui.splash_selesai(ph)
 
 if df.empty:
     st.warning("Belum ada data di sheet DATA OUTLET.")
@@ -322,13 +325,14 @@ st.title("📍 Dashboard Kunjungan Outlet")
 periode = f"{d_from:%d/%m/%Y}" if d_from == d_to else f"{d_from:%d/%m/%Y} – {d_to:%d/%m/%Y}"
 st.caption(f"Periode {periode} · {len(f)} outlet · data terakhir {tmax:%d/%m/%Y}")
 
-k = st.columns(6)
-k[0].metric("Total Outlet", f"{len(f):,}")
-k[1].metric("OCS", f"{f['JENIS OUTLET'].eq('OCS').sum():,}")
-k[2].metric("NON OCS", f"{f['JENIS OUTLET'].eq('NON OCS').sum():,}")
-k[3].metric("WKSK tersedia (Y)", pct_y(f["WKSK"]))
-k[4].metric("ALVA tersedia (Y)", pct_y(f["ALVA"]))
-k[5].metric("Ada Program Kompetitor", pct_y(f["PROGRAM KOMPETITOR"]))
+ui.kpi([
+    ("Total Outlet", f"{len(f):,}", "toko", "hijau"),
+    ("OCS", f"{f['JENIS OUTLET'].eq('OCS').sum():,}", "cek", "hijau"),
+    ("NON OCS", f"{f['JENIS OUTLET'].eq('NON OCS').sum():,}", "silang", "merah"),
+    ("WKSK tersedia (Y)", pct_y(f["WKSK"]), "kotak", "biru"),
+    ("ALVA tersedia (Y)", pct_y(f["ALVA"]), "kotak", "oranye"),
+    ("Ada Program Kompetitor", pct_y(f["PROGRAM KOMPETITOR"]), "target", "ungu"),
+])
 
 tab_map, tab_sum, tab_foto, tab_data = st.tabs(["🗺️ Peta Rute", "📊 Ringkasan", "🖼️ Foto", "📋 Data"])
 
