@@ -38,7 +38,7 @@ def test_menu_coi_bisa_dibuka_tanpa_secrets():
 
     at = AppTest.from_file(str(ROOT / "app.py"), default_timeout=90)
     at.secrets["_CI"] = "1"
-    at.session_state["menu"] = "🏳️ COI TANAH AIR"
+    at.session_state["menu"] = "🇮🇩 COI TANAH AIR"
     at.run()
     assert not at.exception, [e.message for e in at.exception]
-    assert any("COI TANAH AIR" in t.value for t in at.title)
+    assert any("COI TANAH AIR" in m.value for m in at.markdown)

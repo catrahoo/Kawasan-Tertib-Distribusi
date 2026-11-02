@@ -129,6 +129,17 @@ def thumb(raw: bytes, size: int) -> bytes:
 
 
 # ---------------------------------------------------------------- tampilan
+BENDERA = ("<span style='display:inline-flex;flex-direction:column;width:1.45em;height:.97em;"
+           "border:1px solid rgba(0,0,0,.25);border-radius:3px;overflow:hidden;flex:none'>"
+           "<span style='flex:1;background:#E70011'></span><span style='flex:1;background:#FFFFFF'></span></span>")
+
+
+def judul():
+    """Judul dengan bendera merah putih (CSS, supaya sama di Windows/Android/iPhone)."""
+    st.markdown(f"<h1 style='display:flex;align-items:center;gap:.55em'>{BENDERA}COI TANAH AIR</h1>",
+                unsafe_allow_html=True)
+
+
 def _esc(x) -> str:
     return str(x).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
@@ -168,17 +179,17 @@ def render():
     elif KMZ_DEFAULT.exists():
         raw, sumber = KMZ_DEFAULT.read_bytes(), "data tersimpan di repo"
     else:
-        st.title("🏳️ COI TANAH AIR")
+        judul()
         st.info("Belum ada data. Upload file KMZ dari aplikasi Map Marker di sidebar.")
         return
     try:
         df, foto = parse_kmz(raw)
     except Exception as e:
-        st.title("🏳️ COI TANAH AIR")
+        judul()
         st.error(f"File KMZ tidak bisa dibaca: {e}")
         return
     if df.empty:
-        st.title("🏳️ COI TANAH AIR")
+        judul()
         st.warning("KMZ tidak berisi pin outlet.")
         return
 
@@ -202,7 +213,7 @@ def render():
     if hanya_foto:
         f = f[f["JML FOTO"] > 0]
 
-    st.title("🏳️ COI TANAH AIR")
+    judul()
     st.caption(f"{len(f)} outlet · {int(f['JML FOTO'].sum())} foto · area {', '.join(f_area) or '–'}")
     k = st.columns(5)
     k[0].metric("Total Outlet", f"{len(f):,}")

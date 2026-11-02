@@ -66,7 +66,7 @@ if not password_ok():
 
 
 # ---------------------------------------------------------------- menu dashboard
-MENU = ["📍 Dashboard Kunjungan Outlet", "🏳️ COI TANAH AIR"]
+MENU = ["📍 Dashboard Kunjungan Outlet", "🇮🇩 COI TANAH AIR"]
 pilih = st.segmented_control("Menu", MENU, default=MENU[0], key="menu", label_visibility="collapsed")
 if pilih is None:  # klik ulang tombol yang aktif → tetap di menu terakhir
     pilih = st.session_state.get("menu_terakhir", MENU[0])
