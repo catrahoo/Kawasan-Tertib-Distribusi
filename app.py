@@ -65,6 +65,19 @@ if not password_ok():
     st.stop()
 
 
+# ---------------------------------------------------------------- menu dashboard
+MENU = ["📍 Dashboard Kunjungan Outlet", "🏳️ COI TANAH AIR"]
+pilih = st.segmented_control("Menu", MENU, default=MENU[0], key="menu", label_visibility="collapsed")
+if pilih is None:  # klik ulang tombol yang aktif → tetap di menu terakhir
+    pilih = st.session_state.get("menu_terakhir", MENU[0])
+st.session_state["menu_terakhir"] = pilih
+if pilih == MENU[1]:
+    import coi
+
+    coi.render()
+    st.stop()
+
+
 # ---------------------------------------------------------------- data
 def has_service_account() -> bool:
     return ("gcp_json" in st.secrets or "gcp_service_account" in st.secrets) and "sheet_id" in st.secrets
