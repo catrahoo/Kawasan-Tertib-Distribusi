@@ -28,7 +28,7 @@ SCOPES = [
 st.markdown(
     """
     <style>
-    .block-container {padding-top: 1.6rem; padding-bottom: 2rem;}
+    .block-container {padding-top: 4rem; padding-bottom: 2rem;}
     div[data-testid="stMetric"] {background: rgba(46,125,50,.07); border: 1px solid rgba(46,125,50,.25);
         border-radius: 10px; padding: 10px 14px;}
     div[data-testid="stMetricLabel"] p {font-size: .82rem;}
