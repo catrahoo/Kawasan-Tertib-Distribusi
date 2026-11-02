@@ -44,3 +44,15 @@ def test_menu_coi_bisa_dibuka_tanpa_secrets():
     assert any("COI TANAH AIR" in m.value for m in at.markdown)
     assert not any('class="spl"' in m.value for m in at.markdown), "layar loading harus hilang setelah data siap"
     assert any("kpi-card" in m.value for m in at.markdown)
+
+
+def test_hapus_foto():
+    raw = (ROOT / "data" / "coi_tanah_air.kmz").read_bytes()
+    df, foto = coi.parse_kmz(raw)
+    baris = df[df["JML FOTO"] > 0].iloc[0]
+    fn = baris["FOTO"][0]
+    df2, foto2 = coi.parse_kmz(coi.hapus_foto_kmz(raw, fn))
+    assert len(df2) == len(df)
+    assert len(foto2) == len(foto) - 1
+    b2 = df2[(df2["NAMA OUTLET"] == baris["NAMA OUTLET"]) & (df2["AREA"] == baris["AREA"])].iloc[0]
+    assert b2["JML FOTO"] == baris["JML FOTO"] - 1

@@ -11,6 +11,7 @@ import zipfile
 import folium
 import pandas as pd
 import plotly.express as px
+import requests
 import streamlit as st
 import ui
 from PIL import Image, ImageOps
@@ -120,6 +121,61 @@ def parse_kmz(raw: bytes):
     return df, foto
 
 
+def hapus_foto_kmz(raw: bytes, fname: str) -> bytes:
+    """Hapus satu foto dari KMZ Map Marker (termasuk salinan kembarnya). Return KMZ baru."""
+    z = zipfile.ZipFile(io.BytesIO(raw))
+    target = hashlib.md5(z.read(fname)).hexdigest()
+    buang = {n for n in z.namelist() if n.startswith("local_media/") and hashlib.md5(z.read(n)).hexdigest() == target}
+    kml_name = next(n for n in z.namelist() if n.lower().endswith(".kml"))
+    ET.register_namespace("", _K[1:-1])
+    ET.register_namespace("gx", "http://www.google.com/kml/ext/2.2")
+    root = ET.fromstring(z.read(kml_name))
+    for n in buang:
+        q = re.escape(n)
+        for d in root.iter(_K + "description"):
+            if d.text and n in d.text:
+                d.text = re.sub(r'(<br\s*/?>)?<img[^>]*src="' + q + r'"[^>]*/?>', "", d.text)
+        for v in root.iter(_K + "value"):
+            if v.text and n in v.text:
+                v.text = re.sub(r'\{"file_rel_path":"' + q + r'"[^}]*\},?', "", v.text).replace(",]", "]")
+    kml = ET.tostring(root, encoding="utf-8", xml_declaration=True).decode("utf-8")
+    out = io.BytesIO()
+    with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as w:
+        for info in z.infolist():
+            if info.filename in buang:
+                continue
+            data = kml.encode("utf-8") if info.filename == kml_name else z.read(info.filename)
+            w.writestr(info, data)
+    return out.getvalue()
+
+
+def simpan_ke_github(raw: bytes, pesan: str):
+    """Simpan KMZ ke repo lewat GitHub API. Return None kalau berhasil, atau pesan error."""
+    cfg = st.secrets.get("github", {})
+    token = cfg.get("token")
+    if not token:
+        return "Token GitHub belum diisi di Secrets (bagian [github]). Foto hanya terhapus sementara."
+    repo = cfg.get("repo", "catrahoo/Kawasan-Tertib-Distribusi")
+    branch = cfg.get("branch", "main")
+    url = f"https://api.github.com/repos/{repo}/contents/data/coi_tanah_air.kmz"
+    h = {"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"}
+    try:
+        r = requests.get(url, headers=h, params={"ref": branch}, timeout=30)
+        r.raise_for_status()
+        body = {"message": pesan, "content": base64.b64encode(raw).decode(), "sha": r.json()["sha"],
+                "branch": branch}
+        r = requests.put(url, headers=h, json=body, timeout=120)
+        r.raise_for_status()
+    except requests.HTTPError as e:
+        kode = e.response.status_code if e.response is not None else "?"
+        if kode in (401, 403, 404):
+            return f"GitHub menolak (kode {kode}). Cek token: harus punya izin Contents: Read and write untuk repo {repo}."
+        return f"Gagal simpan ke GitHub (kode {kode})."
+    except Exception as e:
+        return f"Gagal simpan ke GitHub: {str(e)[:150]}"
+    return None
+
+
 @st.cache_data(show_spinner=False, max_entries=600)
 def thumb(raw: bytes, size: int) -> bytes:
     img = ImageOps.exif_transpose(Image.open(io.BytesIO(raw))).convert("RGB")
@@ -177,6 +233,8 @@ def render():
                               help="Hanya untuk dilihat sementara. Data tetap di repo kembali dipakai saat app restart.")
     if up is not None:
         raw, sumber = up.getvalue(), f"upload: {up.name}"
+    elif "coi_raw" in st.session_state:  # versi terbaru setelah ada foto yang dihapus
+        raw, sumber = st.session_state["coi_raw"], "data tersimpan di repo"
     elif KMZ_DEFAULT.exists():
         raw, sumber = KMZ_DEFAULT.read_bytes(), "data tersimpan di repo"
     else:
@@ -193,6 +251,9 @@ def render():
         judul()
         st.warning("KMZ tidak berisi pin outlet.")
         return
+    bisa_hapus = up is None
+    if msg := st.session_state.pop("coi_pesan", None):
+        (st.success if msg[0] == "ok" else st.warning)(msg[1])
 
     areas = [a for a in AREA_ORDER if a in df["AREA"].unique()] + sorted(
         a for a in df["AREA"].unique() if a not in AREA_ORDER)
@@ -287,7 +348,19 @@ def render():
                     if r["FOTO"]:
                         pcols = st.columns(min(len(r["FOTO"]), 2))
                         for j, fn in enumerate(r["FOTO"]):
-                            pcols[j % len(pcols)].image(thumb(foto[fn], 900))
+                            pc = pcols[j % len(pcols)]
+                            pc.image(thumb(foto[fn], 900))
+                            if bisa_hapus:
+                                with pc.popover("🗑 Hapus", use_container_width=True):
+                                    st.caption(f"Hapus foto ini dari {r['NAMA OUTLET']}? Tidak bisa dibatalkan.")
+                                    if st.button("Ya, hapus foto", key=f"del_{fn}", type="primary"):
+                                        with st.spinner("Menghapus dan menyimpan ke GitHub…"):
+                                            baru = hapus_foto_kmz(raw, fn)
+                                            err = simpan_ke_github(baru, f"Hapus foto {r['NAMA OUTLET']} ({r['AREA']})")
+                                        st.session_state["coi_raw"] = baru
+                                        st.session_state["coi_pesan"] = (
+                                            ("warn", err) if err else ("ok", f"Foto {r['NAMA OUTLET']} dihapus."))
+                                        st.rerun()
                     else:
                         st.caption("Belum ada foto.")
                     st.markdown(f"[Buka di Google Maps ↗]({r['GOOGLE MAPS']})")
