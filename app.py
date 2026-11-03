@@ -14,7 +14,7 @@ import monitor
 import ui
 monitor.pasang("Dashboard Outlet")  # notif WA kalau app error
 
-st.set_page_config(page_title="Dashboard Outlet", page_icon="📍", layout="wide")
+st.set_page_config(page_title="Kawasan Tertib Distribusi", page_icon="📍", layout="wide")
 
 AREA_ORDER = ["SBY BRT", "SBY TIMUR", "SDA BRT", "SDA TIMUR"]
 ROUTE_COLORS = ["#455A64", "#8E24AA", "#F08C00", "#0C8599", "#6D4C41", "#C2185B"]
@@ -48,7 +48,7 @@ def password_ok() -> bool:
     pw = st.secrets.get("app_password")
     if not pw or st.session_state.get("login_ok"):
         return True
-    st.title("📍 Dashboard Outlet")
+    st.title("📍 Kawasan Tertib Distribusi")
     with st.form("login"):
         p = st.text_input("Password", type="password")
         if st.form_submit_button("Masuk"):
@@ -64,7 +64,7 @@ if not password_ok():
 
 
 # ---------------------------------------------------------------- menu dashboard
-MENU = ["📍 Dashboard Kunjungan Outlet", "🇮🇩 COI TANAH AIR"]
+MENU = ["📍 Kawasan Tertib Distribusi", "🇮🇩 COI TANAH AIR"]
 pilih = st.segmented_control("Menu", MENU, default=MENU[0], key="menu", label_visibility="collapsed")
 if pilih is None:  # klik ulang tombol yang aktif → tetap di menu terakhir
     pilih = st.session_state.get("menu_terakhir", MENU[0])
@@ -268,11 +268,11 @@ def build_map(d: pd.DataFrame, show_route: bool, follow_road: bool) -> folium.Ma
 
 # ---------------------------------------------------------------- load
 if not has_service_account() and "sheet_csv_url" not in st.secrets:
-    st.title("📍 Dashboard Outlet")
+    st.title("📍 Kawasan Tertib Distribusi")
     st.error("Secrets belum diisi. Lihat README bagian **Isi Secrets di Streamlit**.")
     st.stop()
 
-ph = ui.splash_mulai("Dashboard Kunjungan Outlet", "Mengambil data dari Google Sheet…")
+ph = ui.splash_mulai("Kawasan Tertib Distribusi", "Mengambil data dari Google Sheet…")
 try:
     df = load_data()
 except Exception as e:
@@ -321,7 +321,7 @@ if cari:
 f["NO"] = f.groupby("TANGGAL").cumcount() + 1
 
 # ---------------------------------------------------------------- header + KPI
-st.title("📍 Dashboard Kunjungan Outlet")
+st.title("📍 Kawasan Tertib Distribusi")
 periode = f"{d_from:%d/%m/%Y}" if d_from == d_to else f"{d_from:%d/%m/%Y} – {d_to:%d/%m/%Y}"
 st.caption(f"Periode {periode} · {len(f)} outlet · data terakhir {tmax:%d/%m/%Y}")
 
